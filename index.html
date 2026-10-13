@@ -1,0 +1,1881 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>保護者役員会 現金出納帳</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @media print {
+            @page {
+                size: auto;
+                margin: 5mm;
+            }
+            body, html {
+                background: white !important;
+                color: black !important;
+                font-size: 10pt;
+                margin: 0 !important;
+                padding: 0 !important;
+                height: auto !important;
+                min-height: 0 !important;
+            }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            .container, main { 
+                max-width: 100% !important; 
+                margin: 0 !important; 
+                padding: 0 !important; 
+            }
+            .shadow-md, .shadow-sm, .shadow-lg, .shadow-2xl { box-shadow: none !important; }
+            .border, .border-b, .border-t, .border-l-4 { border-color: #000 !important; }
+            th, td { border: 1px solid #000 !important; padding: 4px !important; }
+            .page-break { page-break-after: always; }
+        }
+        .print-only { display: none; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen pb-12">
+
+    <!-- Header -->
+    <header class="bg-emerald-700 text-white shadow-md no-print">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-book-bookmark text-2xl text-emerald-200"></i>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">保護者役員会 現金出納帳</h1>
+                    <p class="text-xs text-emerald-100">アカウント不要・スマホ完結</p>
+                </div>
+            </div>
+            <!-- Navigation Tabs -->
+            <nav class="flex items-center gap-1 overflow-x-auto py-1">
+                <button onclick="switchTab('ledger')" id="tab-btn-ledger" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-800 text-white hover:bg-emerald-600 transition whitespace-nowrap">
+                    <i class="fa-solid fa-list mr-1"></i>出納帳
+                </button>
+                <button onclick="switchTab('summary')" id="tab-btn-summary" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-100 hover:bg-emerald-600 transition whitespace-nowrap">
+                    <i class="fa-solid fa-chart-pie mr-1"></i>集計
+                </button>
+                <button onclick="switchTab('vouchers')" id="tab-btn-vouchers" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-100 hover:bg-emerald-600 transition whitespace-nowrap">
+                    <i class="fa-solid fa-receipt mr-1"></i>証憑・伝票
+                </button>
+                <button onclick="switchTab('advances')" id="tab-btn-advances" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-100 hover:bg-emerald-600 transition whitespace-nowrap">
+                    <i class="fa-solid fa-hand-holding-dollar mr-1"></i>仮払・精算
+                </button>
+                <button onclick="switchTab('backup')" id="tab-btn-backup" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-100 hover:bg-emerald-600 transition whitespace-nowrap">
+                    <i class="fa-solid fa-arrows-rotate mr-1"></i>引継ぎ・保存
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-6">
+
+        <!-- Top Banner Info -->
+        <div class="no-print bg-amber-50 border-l-4 border-amber-400 p-4 mb-6 rounded-r-lg text-sm text-amber-800 shadow-sm flex items-start gap-3">
+            <i class="fa-solid fa-circle-info text-amber-600 mt-0.5 text-lg flex-shrink-0"></i>
+            <div>
+                <p class="font-bold">会計データはこの端末内に保存されます</p>
+                <p class="text-xs mt-0.5">入力した会計データと領収書・レシート写真は、お使いの端末（ブラウザ）内に保存されます。年度末や役員交代時には「引継ぎ・保存」タブからバックアップファイルを保存し、後任の方へ引き渡してください。</p>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 no-print">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-slate-500 font-bold block mb-1">総収入金額</span>
+                    <span id="stat-income" class="text-xl font-bold text-emerald-600">¥0</span>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <i class="fa-solid fa-arrow-down"></i>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-slate-500 font-bold block mb-1">総支出金額</span>
+                    <span id="stat-expense" class="text-xl font-bold text-rose-600">¥0</span>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center">
+                    <i class="fa-solid fa-arrow-up"></i>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+                <div>
+                    <span class="text-xs text-emerald-100 font-bold block mb-1">現在残高 (手元現金)</span>
+                    <span id="stat-balance" class="text-2xl font-extrabold">¥0</span>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 1: 出納帳 (Ledger) -->
+        <section id="tab-content-ledger" class="space-y-6">
+            <!-- Input Form Card -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm no-print">
+                <h2 class="text-base font-bold text-slate-700 border-b pb-3 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-emerald-600"></i>入出金の登録
+                </h2>
+                <form id="transaction-form" onsubmit="handleFormSubmit(event)" class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">日付 <span class="text-rose-500">*</span></label>
+                        <input type="date" id="input-date" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">区分 <span class="text-rose-500">*</span></label>
+                        <select id="input-type" required onchange="updateCategoryOptions()" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <option value="expense">支出 (払い)</option>
+                            <option value="income">収入 (預かり)</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">勘定科目 <span class="text-rose-500">*</span></label>
+                        <select id="input-category" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">金額 (円) <span class="text-rose-500">*</span></label>
+                        <input type="number" id="input-amount" min="1" required placeholder="例: 1500" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+
+                    <div class="md:col-span-6">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">摘要・内容 <span class="text-rose-500">*</span></label>
+                        <input type="text" id="input-description" required placeholder="例: 総会お茶代、文房具購入など" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">支払/保管区分</label>
+                        <select id="input-method" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <option value="現金">現金</option>
+                            <option value="銀行口座">銀行口座</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">証憑番号 (領収書の番号)</label>
+                        <input type="text" id="input-receipt-no" placeholder="例: 12" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+
+                    <div class="md:col-span-12 flex justify-end gap-2 mt-2">
+                        <button type="reset" class="px-4 py-2 border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-100 transition">
+                            クリア
+                        </button>
+                        <button type="submit" class="px-6 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm transition">
+                            <i class="fa-solid fa-plus mr-1"></i>登録する
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="print-area" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-4">
+                <div class="p-2 bg-slate-50 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3 no-print mb-4 rounded-lg">
+                    <div class="flex items-center gap-2">
+                        <h3 class="font-bold text-slate-700">現金出納明細一覧</h3>
+                        <span id="record-count" class="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-medium">0件</span>
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select id="filter-category" onchange="renderTransactions()" class="px-3 py-1.5 border rounded-lg text-xs outline-none bg-white">
+                            <option value="all">すべての科目</option>
+                        </select>
+
+                        <button onclick="window.print()" class="px-3 py-1.5 bg-slate-700 text-white rounded-lg text-xs font-medium hover:bg-slate-800 transition flex items-center gap-1">
+                            <i class="fa-solid fa-print"></i>PDF保存・印刷
+                        </button>
+
+                        <button onclick="exportToCSV()" class="px-3 py-1.5 bg-emerald-700 text-white rounded-lg text-xs font-medium hover:bg-emerald-800 transition flex items-center gap-1">
+                            <i class="fa-solid fa-file-excel"></i>CSV(Excel)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="print-header hidden text-center mb-6 pt-2">
+                    <h1 class="text-2xl font-bold">保護者役員会 現金出納帳</h1>
+                    <p id="print-date" class="text-xs text-slate-600 mt-1"></p>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 border-b text-xs uppercase tracking-wider">
+                                <th class="py-3 px-3">日付</th>
+                                <th class="py-3 px-3">区分</th>
+                                <th class="py-3 px-3">科目</th>
+                                <th class="py-3 px-3">摘要・内容</th>
+                                <th class="py-3 px-3 text-right">収入金額</th>
+                                <th class="py-3 px-3 text-right">支出金額</th>
+                                <th class="py-3 px-3 text-right">差引残高</th>
+                                <th class="py-3 px-3 text-center no-print">領収書/伝票</th>
+                                <th class="py-3 px-3 text-center no-print">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transaction-list" class="divide-y divide-slate-100">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="empty-state" class="py-12 text-center text-slate-400">
+                    <i class="fa-solid fa-folder-open text-4xl mb-3 block"></i>
+                    <p class="text-sm">データがまだありません。上のフォームから入力してください。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: 集計表 (Summary) -->
+        <section id="tab-content-summary" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-lg font-bold text-slate-800 border-b pb-3 mb-4 flex items-center justify-between">
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-chart-pie text-emerald-600"></i>科目別費用集計表</span>
+                    <button onclick="window.print()" class="no-print px-3 py-1 bg-slate-700 text-white rounded text-xs font-normal"><i class="fa-solid fa-print mr-1"></i>印刷</button>
+                </h2>
+                <p class="text-xs text-slate-500 mb-4 no-print">※仮払金の出金額そのものは除外し、精算が確定した「実際の使用費用」だけを科目ごとに集計しています（二重計上を防止）。</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-sm font-bold text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg mb-3 flex items-center justify-between">
+                            <span>収入の部</span>
+                            <span id="summary-income-total">¥0</span>
+                        </h3>
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b text-xs text-slate-500">
+                                    <th class="py-2 text-left">科目</th>
+                                    <th class="py-2 text-right">合計金額</th>
+                                </tr>
+                            </thead>
+                            <tbody id="summary-income-tbody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-bold text-rose-700 bg-rose-50 px-3 py-2 rounded-lg mb-3 flex items-center justify-between">
+                            <span>支出の部 (正式費用)</span>
+                            <span id="summary-expense-total">¥0</span>
+                        </h3>
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b text-xs text-slate-500">
+                                    <th class="py-2 text-left">科目</th>
+                                    <th class="py-2 text-right">合計金額</th>
+                                </tr>
+                            </thead>
+                            <tbody id="summary-expense-tbody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: 証憑・伝票 (Vouchers & Receipts) -->
+        <section id="tab-content-vouchers" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex flex-wrap justify-between items-center gap-3 border-b pb-3 mb-4 no-print">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-receipt text-emerald-600"></i>証憑・出金伝票一覧
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-1">領収書・レシート写真、出金伝票、仮払精算書を月別に確認・PDF保存できます。</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-semibold text-slate-600">対象年月:</label>
+                        <input type="month" id="voucher-month-filter" onchange="renderVoucherList()" class="px-3 py-1.5 border rounded-lg text-xs outline-none">
+                        <button onclick="window.print()" class="px-3 py-1.5 bg-slate-700 text-white rounded-lg text-xs font-medium hover:bg-slate-800 transition flex items-center gap-1">
+                            <i class="fa-solid fa-print"></i>証憑PDF保存・印刷
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Storage Info Card -->
+                <div class="bg-slate-50 border border-slate-200 p-3 rounded-lg mb-6 flex items-center justify-between text-xs no-print">
+                    <div class="flex items-center gap-2 text-slate-600">
+                        <i class="fa-solid fa-hard-drive text-slate-400 text-base"></i>
+                        <span>端末内データ保存容量: <strong id="voucher-photo-count">0枚</strong> (推定 <span id="voucher-storage-size">0MB</span>)</span>
+                    </div>
+                    <span class="text-slate-400 text-[10px]">※自動削除は行われません</span>
+                </div>
+
+                <!-- Voucher Items View Area -->
+                <div id="voucher-display-container" class="space-y-8">
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: 仮払・精算 (Advances & Settlements) -->
+        <section id="tab-content-advances" class="hidden space-y-6">
+            <!-- Advance Register Form -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm no-print">
+                <h2 class="text-base font-bold text-slate-700 border-b pb-3 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-hand-holding-dollar text-emerald-600"></i>仮払いの新規登録
+                </h2>
+                <form id="advance-form" onsubmit="handleAdvanceSubmit(event)" class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">仮払日 <span class="text-rose-500">*</span></label>
+                        <input type="date" id="adv-date" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">仮払先 (渡した相手) <span class="text-rose-500">*</span></label>
+                        <input type="text" id="adv-person" required placeholder="例: 渡辺役員、バザー担当" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">仮払額 (円) <span class="text-rose-500">*</span></label>
+                        <input type="number" id="adv-amount" min="1" required placeholder="例: 10000" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">用途・目的 <span class="text-rose-500">*</span></label>
+                        <input type="text" id="adv-purpose" required placeholder="例: バザー買出代" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div class="md:col-span-12 flex justify-end">
+                        <button type="submit" class="px-6 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm transition">
+                            <i class="fa-solid fa-plus mr-1"></i>仮払いを渡す (現金を渡す)
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Advance Status Summary -->
+            <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl flex flex-wrap items-center justify-between gap-4 no-print">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs text-amber-800 font-bold block">未精算の仮払状況</span>
+                        <span id="adv-unsettled-summary" class="text-lg font-bold text-amber-900">未精算 0件 / 計 ¥0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advances List -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="font-bold text-slate-700 border-b pb-3 mb-4">仮払い・精算管理一覧</h3>
+                <div id="advances-list" class="space-y-4">
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: 引継ぎ・保存 (Backup & Handover) -->
+        <section id="tab-content-backup" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-lg font-bold text-slate-800 border-b pb-3 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-handshake text-emerald-600"></i>後任への引き継ぎ手順
+                </h2>
+                <div class="space-y-4 text-sm text-slate-600">
+                    <div class="flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-xs flex-shrink-0 mt-0.5">1</span>
+                        <div>
+                            <p class="font-bold text-slate-800">バックアップを保存（現会計担当者）</p>
+                            <p class="text-xs mt-1 text-slate-500">「バックアップを保存」を押して、最新の会計データ・写真・伝票・仮払情報を保存します。ファイルを引き渡してください。</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-xs flex-shrink-0 mt-0.5">2</span>
+                        <div>
+                            <p class="font-bold text-slate-800">バックアップから復元（新会計担当者）</p>
+                            <p class="text-xs mt-1 text-slate-500">「バックアップから復元」を押し、受け取ったファイルを選択します。旧バージョンのデータファイルもそのまま復元できます。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3">
+                            <i class="fa-solid fa-download text-lg"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800 mb-1">バックアップ（データ出力）</h3>
+                        <p class="text-xs text-slate-500 mb-4">全明細、仮払・精算、出金伝票、写真をまとめたバックアップを作成します。</p>
+                    </div>
+                    <div>
+                        <button onclick="exportBackupJSON()" class="w-full py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 transition flex items-center justify-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-file-arrow-down"></i>バックアップを保存
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center mb-3">
+                            <i class="fa-solid fa-upload text-lg"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800 mb-1">復元・引き継ぎ（データ読み込み）</h3>
+                        <p class="text-xs text-slate-500 mb-4">バックアップファイルからデータを全復元します（旧形式ファイルも対応）。</p>
+                    </div>
+                    <div>
+                        <input type="file" id="import-file" accept="application/json,.json" class="hidden" onchange="importBackupJSON(event)">
+                        <button onclick="document.getElementById('import-file').click()" class="w-full py-2.5 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 transition flex items-center justify-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-file-arrow-up"></i>バックアップから復元
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-rose-50 p-6 rounded-xl border border-rose-200">
+                <h3 class="text-sm font-bold text-rose-800 mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>全データクリア（新年度開始時）</h3>
+                <p class="text-xs text-rose-600 mb-4">出納明細、仮払・精算、伝票、写真など全てのデータを初期化します。（※実行前に必ずバックアップを取ってください）</p>
+                <button onclick="clearAllData()" class="px-4 py-2 bg-rose-600 text-white rounded-lg text-xs font-semibold hover:bg-rose-700 transition">
+                    データをすべて初期化する
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal 1: Image Preview -->
+    <div id="image-modal" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4 no-print" onclick="closeImageModal()">
+        <div class="bg-white rounded-xl max-w-2xl w-full overflow-hidden shadow-2xl relative" onclick="event.stopPropagation()">
+            <div class="p-3 border-b flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-sm text-slate-700" id="modal-title">領収書・レシートプレビュー</h3>
+                <button onclick="closeImageModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full flex items-center justify-center">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-4 flex items-center justify-center bg-slate-900 min-h-[300px] max-h-[70vh]">
+                <img id="modal-image" src="" alt="領収書" class="max-h-[65vh] max-w-full object-contain rounded">
+            </div>
+            <div class="p-3 border-t text-right bg-slate-50">
+                <button onclick="closeImageModal()" class="px-4 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-300">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Create Payment Voucher (出金伝票作成) -->
+    <div id="voucher-modal" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4 no-print" onclick="closeVoucherModal()">
+        <div class="bg-white rounded-xl max-w-lg w-full p-5 shadow-2xl relative" onclick="event.stopPropagation()">
+            <h3 class="font-bold text-base text-slate-800 border-b pb-2 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-file-invoice text-emerald-600"></i>出金伝票の作成
+            </h3>
+            <form id="voucher-form" onsubmit="handleSaveVoucher(event)" class="space-y-3">
+                <input type="hidden" id="v-target-id">
+                <input type="hidden" id="v-target-type">
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">伝票日付</label>
+                    <input type="date" id="v-date" required class="w-full px-3 py-1.5 border rounded-lg text-sm bg-slate-100" readonly>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">勘定科目</label>
+                        <input type="text" id="v-category" required class="w-full px-3 py-1.5 border rounded-lg text-sm bg-slate-100" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">金額 (円)</label>
+                        <input type="number" id="v-amount" required class="w-full px-3 py-1.5 border rounded-lg text-sm bg-slate-100" readonly>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">支出内容 / 摘要</label>
+                    <input type="text" id="v-description" required class="w-full px-3 py-1.5 border rounded-lg text-sm bg-slate-100" readonly>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">支払先 (誰・どこへ払ったか) <span class="text-rose-500">*</span></label>
+                    <input type="text" id="v-payee" required placeholder="例: 〇〇自治会、〇〇商店" class="w-full px-3 py-1.5 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">領収書がない理由 <span class="text-rose-500">*</span></label>
+                    <select id="v-reason" required class="w-full px-3 py-1.5 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                        <option value="慶弔費・香典・見舞金のため">慶弔費・香典・見舞金のため</option>
+                        <option value="自動販売機・交通機関利用のため">自動販売機・交通機関利用のため</option>
+                        <option value="相手先より領収書が発行されなかったため">相手先より領収書が発行されなかったため</option>
+                        <option value="領収書を紛失したため">領収書を紛失したため</option>
+                        <option value="その他">その他</option>
+                    </select>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t mt-4">
+                    <button type="button" onclick="closeVoucherModal()" class="px-4 py-2 border rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100">
+                        キャンセル
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700">
+                        出金伝票を発行・保存
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: Perform Settlement (精算登録) -->
+    <div id="settle-modal" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4 no-print overflow-y-auto" onclick="closeSettleModal()">
+        <div class="bg-white rounded-xl max-w-2xl w-full p-5 shadow-2xl relative my-8" onclick="event.stopPropagation()">
+            <h3 class="font-bold text-base text-slate-800 border-b pb-2 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-calculator text-emerald-600"></i>仮払精算の登録
+            </h3>
+            
+            <div id="settle-info-banner" class="bg-slate-50 p-3 rounded-lg text-xs mb-4 grid grid-cols-2 gap-2 text-slate-700 border">
+                <div>仮払先: <strong id="settle-info-person">-</strong></div>
+                <div>仮払日: <span id="settle-info-date">-</span></div>
+                <div>目的: <span id="settle-info-purpose">-</span></div>
+                <div>仮払金額: <strong id="settle-info-amount" class="text-emerald-700 text-sm">¥0</strong></div>
+            </div>
+
+            <form id="settle-form" onsubmit="handleConfirmSettlement(event)" class="space-y-4">
+                <input type="hidden" id="settle-adv-id">
+                
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs font-bold text-slate-700">使用明細 (実際の支出)</label>
+                        <button type="button" onclick="addSettleItemRow()" class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold hover:bg-emerald-200">
+                            <i class="fa-solid fa-plus mr-1"></i>明細を追加
+                        </button>
+                    </div>
+
+                    <div id="settle-items-container" class="space-y-3">
+                        <!-- Settle item rows inserted here -->
+                    </div>
+                </div>
+
+                <!-- Calculation Summary Block -->
+                <div class="bg-amber-50 border border-amber-200 p-3 rounded-lg text-xs space-y-1 text-amber-900">
+                    <div class="flex justify-between">
+                        <span>使用金額 合計:</span>
+                        <strong id="settle-total-used">¥0</strong>
+                    </div>
+                    <div class="flex justify-between text-sm font-bold border-t border-amber-200 pt-1 mt-1">
+                        <span id="settle-diff-label">差額判定:</span>
+                        <span id="settle-diff-value">¥0</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t">
+                    <button type="button" onclick="closeSettleModal()" class="px-4 py-2 border rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100">
+                        キャンセル
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm">
+                        精算内容を確定する
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 4: Edit Completed Settlement (精算内訳訂正 モーダル) -->
+    <div id="edit-settle-modal" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4 no-print overflow-y-auto" onclick="closeEditSettleModal()">
+        <div class="bg-white rounded-xl max-w-2xl w-full p-5 shadow-2xl relative my-8" onclick="event.stopPropagation()">
+            <h3 class="font-bold text-base text-slate-800 border-b pb-2 mb-3 flex items-center justify-between">
+                <span class="flex items-center gap-2"><i class="fa-solid fa-pen text-amber-600"></i>精算内容の確認・費用内訳訂正</span>
+                <span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-medium">🟢 精算済み</span>
+            </h3>
+
+            <p class="text-xs text-slate-500 mb-3">※勘定科目や摘要の訂正を行えます。総額の変更等で現金返金・追加支給の手渡し額自体を直す場合は「精算・現金受渡しを取り消す」を実行してください。</p>
+
+            <form id="edit-settle-form" onsubmit="handleSaveEditedSettle(event)" class="space-y-4">
+                <input type="hidden" id="edit-settle-adv-id">
+                
+                <div id="edit-settle-items-container" class="space-y-3">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">訂正理由 <span class="text-rose-500">*</span></label>
+                    <input type="text" id="edit-settle-reason" required placeholder="例: 勘定科目の修正のため" class="w-full px-3 py-1.5 border rounded text-xs outline-none focus:ring-1 focus:ring-emerald-500">
+                </div>
+
+                <!-- History Display -->
+                <div id="edit-settle-history-box" class="bg-slate-50 border p-2 rounded text-[11px] text-slate-600 max-h-32 overflow-y-auto">
+                    <strong class="block text-slate-700 mb-1">訂正履歴:</strong>
+                    <ul id="edit-settle-history-list" class="list-disc pl-4 space-y-0.5"></ul>
+                </div>
+
+                <div class="flex justify-between items-center pt-3 border-t">
+                    <button type="button" onclick="handleCancelAndResetSettle()" class="px-3 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 rounded text-xs font-bold hover:bg-rose-100">
+                        精算・現金受渡しを取り消す
+                    </button>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="closeEditSettleModal()" class="px-4 py-2 border rounded text-xs font-semibold text-slate-600 hover:bg-slate-100">
+                            閉じる
+                        </button>
+                        <button type="submit" class="px-5 py-2 bg-emerald-600 text-white rounded text-xs font-bold hover:bg-emerald-700">
+                            内訳変更を保存
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript Core -->
+    <script>
+        const CATEGORIES = {
+            income: ['前年度繰越金', '会費収入', '補助金収入', 'イベント収入', '雑収入'],
+            expense: ['会場費', 'お茶・飲食代', '印刷製本費', '消耗品費・文房具', '行事・イベント費', '総会・役員会費', '慶弔費', '雑費']
+        };
+
+        // Data Stores (Key separated for backward compatibility)
+        let transactions = [];      // parents_association_ledger
+        let advances = [];          // parents_association_advances
+        let paymentVouchers = [];   // parents_association_vouchers
+
+        // 端末の現地時刻で今日の日付 (YYYY-MM-DD) を返す
+        function todayStr() {
+            const d = new Date();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${d.getFullYear()}-${m}-${day}`;
+        }
+
+        window.onload = function() {
+            loadLocalData();
+            
+            const today = todayStr();
+            document.getElementById('input-date').value = today;
+            document.getElementById('adv-date').value = today;
+            
+            const currentMonth = todayStr().slice(0, 7);
+            document.getElementById('voucher-month-filter').value = currentMonth;
+
+            updateCategoryOptions();
+            document.getElementById('print-date').textContent = `作成日: ${new Date().toLocaleDateString('ja-JP')}`;
+            
+            renderTransactions();
+        };
+
+        function switchTab(tabName) {
+            ['ledger', 'summary', 'vouchers', 'advances', 'backup'].forEach(tab => {
+                const content = document.getElementById(`tab-content-${tab}`);
+                const btn = document.getElementById(`tab-btn-${tab}`);
+                
+                if (tab === tabName) {
+                    content.classList.remove('hidden');
+                    btn.classList.add('bg-emerald-800', 'text-white');
+                    btn.classList.remove('text-emerald-100');
+                } else {
+                    content.classList.add('hidden');
+                    btn.classList.remove('bg-emerald-800');
+                    btn.classList.add('text-emerald-100');
+                }
+            });
+
+            if (tabName === 'ledger') renderTransactions();
+            if (tabName === 'summary') renderSummary();
+            if (tabName === 'vouchers') renderVoucherList();
+            if (tabName === 'advances') renderAdvancesList();
+        }
+
+        function updateCategoryOptions() {
+            const type = document.getElementById('input-type').value;
+            const categorySelect = document.getElementById('input-category');
+            const filterSelect = document.getElementById('filter-category');
+
+            categorySelect.innerHTML = '';
+            CATEGORIES[type].forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                categorySelect.appendChild(opt);
+            });
+
+            filterSelect.innerHTML = '<option value="all">すべての科目</option>';
+            const allCats = [...CATEGORIES.income, ...CATEGORIES.expense];
+            allCats.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                filterSelect.appendChild(opt);
+            });
+        }
+
+        /* --- Cash Event & Ledger Logic --- */
+        function getAllCashEvents() {
+            let events = [];
+
+            // 1. Normal Ledger Transactions
+            transactions.forEach(t => {
+                events.push({
+                    id: t.id,
+                    source: 'ledger',
+                    date: t.date,
+                    type: t.type,
+                    category: t.category,
+                    description: t.description,
+                    method: t.method || '現金',
+                    amount: t.amount,
+                    photo: t.photo || null,
+                    raw: t
+                });
+            });
+
+            // 2. Advance Cash Events
+            advances.forEach(adv => {
+                // Event A: Original Advance Payment (Cash Out)
+                events.push({
+                    id: `adv-out-${adv.id}`,
+                    source: 'advance_out',
+                    advId: adv.id,
+                    date: adv.date,
+                    type: 'expense',
+                    category: '仮払金出金',
+                    description: `【仮払手渡】${adv.person} 様 (${adv.purpose})`,
+                    method: '現金',
+                    amount: adv.amount,
+                    photo: null
+                });
+
+                // Event B: Refund Received (Cash In)
+                if (adv.refundReceivedDate && adv.refundAmount > 0) {
+                    events.push({
+                        id: `adv-refund-${adv.id}`,
+                        source: 'advance_refund',
+                        advId: adv.id,
+                        date: adv.refundReceivedDate,
+                        type: 'income',
+                        category: '仮払返金受入',
+                        description: `【仮払返金領収】${adv.person} 様より返金受領`,
+                        method: '現金',
+                        amount: adv.refundAmount,
+                        photo: null
+                    });
+                }
+
+                // Event B_cancel: Refund Cancellation Adjustment (Cash Out)
+                if (adv.refundReceivedDate && adv.refundAmount > 0 && adv.cancelledRefundDate) {
+                    events.push({
+                        id: `adv-refund-cancel-${adv.id}`,
+                        source: 'advance_refund_cancel',
+                        advId: adv.id,
+                        date: adv.cancelledRefundDate,
+                        type: 'expense',
+                        category: '仮払返金取消調整',
+                        description: `【仮払返金取消調整】${adv.person} 様返金分の受領取消`,
+                        method: '現金',
+                        amount: adv.refundAmount,
+                        photo: null
+                    });
+                }
+
+                // Event C: Additional Payment Given (Cash Out)
+                if (adv.additionalPaidDate && adv.additionalAmount > 0) {
+                    events.push({
+                        id: `adv-add-${adv.id}`,
+                        source: 'advance_add',
+                        advId: adv.id,
+                        date: adv.additionalPaidDate,
+                        type: 'expense',
+                        category: '仮払追加支給',
+                        description: `【仮払追加手渡】${adv.person} 様へ不足分追加支給`,
+                        method: '現金',
+                        amount: adv.additionalAmount,
+                        photo: null
+                    });
+                }
+
+                // Event C_cancel: Additional Payment Cancellation Adjustment (Cash In)
+                if (adv.additionalPaidDate && adv.additionalAmount > 0 && adv.cancelledAdditionalDate) {
+                    events.push({
+                        id: `adv-add-cancel-${adv.id}`,
+                        source: 'advance_add_cancel',
+                        advId: adv.id,
+                        date: adv.cancelledAdditionalDate,
+                        type: 'income',
+                        category: '仮払追加支給取消調整',
+                        description: `【仮払追加支給取消調整】${adv.person} 様追加支給分の取消調整`,
+                        method: '現金',
+                        amount: adv.additionalAmount,
+                        photo: null
+                    });
+                }
+            });
+
+            events.sort((a, b) => new Date(a.date) - new Date(b.date));
+            return events;
+        }
+
+        function handleFormSubmit(event) {
+            event.preventDefault();
+
+            const date = document.getElementById('input-date').value;
+            const type = document.getElementById('input-type').value;
+            const category = document.getElementById('input-category').value;
+            const amount = parseInt(document.getElementById('input-amount').value, 10);
+            const description = document.getElementById('input-description').value;
+            const method = document.getElementById('input-method').value;
+            const receiptNo = document.getElementById('input-receipt-no').value.trim();
+
+            saveTransaction({
+                id: Date.now().toString(),
+                date,
+                type,
+                category,
+                amount,
+                description,
+                method,
+                receiptNo,
+                photo: null
+            });
+        }
+
+        function saveTransaction(item) {
+            transactions.push(item);
+            transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+            saveLocalData();
+            renderTransactions();
+
+            const currentDate = document.getElementById('input-date').value;
+            document.getElementById('transaction-form').reset();
+            document.getElementById('input-date').value = currentDate;
+            updateCategoryOptions();
+        }
+
+        function renderTransactions() {
+            const tbody = document.getElementById('transaction-list');
+            const emptyState = document.getElementById('empty-state');
+            const filterCat = document.getElementById('filter-category').value;
+
+            tbody.innerHTML = '';
+
+            const events = getAllCashEvents();
+
+            let currentBalance = 0;
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            events.forEach(e => {
+                if (e.type === 'income') {
+                    totalIncome += e.amount;
+                    currentBalance += e.amount;
+                } else {
+                    totalExpense += e.amount;
+                    currentBalance -= e.amount;
+                }
+                e.runningBalance = currentBalance;
+            });
+
+            document.getElementById('stat-income').textContent = `¥${totalIncome.toLocaleString()}`;
+            document.getElementById('stat-expense').textContent = `¥${totalExpense.toLocaleString()}`;
+            document.getElementById('stat-balance').textContent = `¥${currentBalance.toLocaleString()}`;
+
+            const filteredEvents = events.filter(e => filterCat === 'all' || e.category === filterCat);
+            document.getElementById('record-count').textContent = `${filteredEvents.length}件`;
+
+            if (filteredEvents.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            filteredEvents.forEach(e => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 border-b border-slate-100 transition';
+                const isIncome = e.type === 'income';
+
+                const hasVoucher = paymentVouchers.some(v => v.targetId === e.id);
+
+                let voucherBtn = '';
+                if (e.source === 'ledger') {
+                    if (e.raw && e.raw.receiptNo) {
+                        voucherBtn = `<span class="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-bold border border-emerald-200">No.${e.raw.receiptNo}</span>`;
+                    } else if (e.photo) {
+                        voucherBtn = `<button onclick="openImageModal('${e.photo}', '${e.description}')" class="text-xs bg-slate-100 text-slate-600 hover:bg-slate-200 px-2 py-1 rounded inline-flex items-center gap-1 border"><i class="fa-solid fa-image text-emerald-600"></i>写真</button>`;
+                    } else if (hasVoucher) {
+                        voucherBtn = `<span class="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded font-bold border border-amber-200"><i class="fa-solid fa-file-invoice mr-1"></i>伝票済</span>`;
+                    } else if (!isIncome) {
+                        voucherBtn = `<button onclick="openVoucherModal('${e.id}', 'ledger')" class="text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded border border-amber-200"><i class="fa-solid fa-plus mr-1"></i>伝票作成</button>`;
+                    } else {
+                        voucherBtn = `<span class="text-xs text-slate-400">-</span>`;
+                    }
+                } else {
+                    voucherBtn = `<span class="text-xs text-slate-400">仮払移動</span>`;
+                }
+
+                let deleteBtn = '';
+                if (e.source === 'ledger') {
+                    deleteBtn = `<button onclick="deleteTransaction('${e.id}')" class="text-slate-400 hover:text-rose-600 transition px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>`;
+                } else {
+                    deleteBtn = `<button onclick="switchTab('advances')" class="text-xs text-slate-400 hover:text-emerald-600 underline">仮払画面へ</button>`;
+                }
+
+                tr.innerHTML = `
+                    <td class="py-3 px-3 font-mono text-xs text-slate-600">${e.date}</td>
+                    <td class="py-3 px-3">
+                        <span class="inline-block px-2 py-0.5 rounded text-xs font-bold ${isIncome ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                            ${isIncome ? '収入' : '支出'}
+                        </span>
+                    </td>
+                    <td class="py-3 px-3 font-medium text-slate-700">${e.category}</td>
+                    <td class="py-3 px-3 text-slate-800">${e.description} <span class="text-xs text-slate-400 block">${e.method || ''}</span></td>
+                    <td class="py-3 px-3 text-right font-mono font-medium text-emerald-600">${isIncome ? '¥' + e.amount.toLocaleString() : '-'}</td>
+                    <td class="py-3 px-3 text-right font-mono font-medium text-rose-600">${!isIncome ? '¥' + e.amount.toLocaleString() : '-'}</td>
+                    <td class="py-3 px-3 text-right font-mono font-bold text-slate-700">¥${e.runningBalance.toLocaleString()}</td>
+                    <td class="py-3 px-3 text-center no-print">${voucherBtn}</td>
+                    <td class="py-3 px-3 text-center no-print">${deleteBtn}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function deleteTransaction(id) {
+            if (confirm('この明細を削除してもよろしいですか？')) {
+                transactions = transactions.filter(t => t.id !== id);
+                paymentVouchers = paymentVouchers.filter(v => v.targetId !== id);
+                saveLocalData();
+                renderTransactions();
+            }
+        }
+
+        /* --- Summary Logic (二重計上防止) --- */
+        function renderSummary() {
+            const incomeBody = document.getElementById('summary-income-tbody');
+            const expenseBody = document.getElementById('summary-expense-tbody');
+
+            incomeBody.innerHTML = '';
+            expenseBody.innerHTML = '';
+
+            const categoryTotals = {};
+            [...CATEGORIES.income, ...CATEGORIES.expense].forEach(cat => {
+                categoryTotals[cat] = 0;
+            });
+
+            let incomeTotal = 0;
+            let expenseTotal = 0;
+
+            // 1. Standard Ledger Transactions
+            transactions.forEach(t => {
+                if (t.type === 'income') {
+                    categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+                    incomeTotal += t.amount;
+                } else {
+                    categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+                    expenseTotal += t.amount;
+                }
+            });
+
+            // 2. Confirmed Settlement Usage Items (仮払使用明細・正式費用)
+            advances.forEach(adv => {
+                if (adv.status === 'refund_pending' || adv.status === 'additional_pending' || adv.status === 'completed') {
+                    if (adv.items && adv.items.length > 0) {
+                        adv.items.forEach(item => {
+                            const cat = item.category || '雑費';
+                            const amt = parseInt(item.amount, 10) || 0;
+                            categoryTotals[cat] = (categoryTotals[cat] || 0) + amt;
+                            expenseTotal += amt;
+                        });
+                    }
+                }
+            });
+
+            document.getElementById('summary-income-total').textContent = `¥${incomeTotal.toLocaleString()}`;
+            document.getElementById('summary-expense-total').textContent = `¥${expenseTotal.toLocaleString()}`;
+
+            CATEGORIES.income.forEach(cat => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-2 text-slate-700">${cat}</td>
+                    <td class="py-2 text-right font-mono font-medium">¥${(categoryTotals[cat] || 0).toLocaleString()}</td>
+                `;
+                incomeBody.appendChild(tr);
+            });
+
+            CATEGORIES.expense.forEach(cat => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-2 text-slate-700">${cat}</td>
+                    <td class="py-2 text-right font-mono font-medium">¥${(categoryTotals[cat] || 0).toLocaleString()}</td>
+                `;
+                expenseBody.appendChild(tr);
+            });
+        }
+
+        /* --- Advances & Settlements Logic --- */
+        function handleAdvanceSubmit(event) {
+            event.preventDefault();
+            const date = document.getElementById('adv-date').value;
+            const person = document.getElementById('adv-person').value;
+            const amount = parseInt(document.getElementById('adv-amount').value, 10);
+            const purpose = document.getElementById('adv-purpose').value;
+
+            const newAdv = {
+                id: Date.now().toString(),
+                date,
+                person,
+                amount,
+                purpose,
+                status: 'unsettled', // unsettled, refund_pending, additional_pending, completed
+                items: [],
+                totalUsed: 0,
+                refundAmount: 0,
+                refundReceivedDate: null,
+                cancelledRefundDate: null,
+                additionalAmount: 0,
+                additionalPaidDate: null,
+                cancelledAdditionalDate: null,
+                history: []
+            };
+
+            advances.push(newAdv);
+            saveLocalData();
+            document.getElementById('advance-form').reset();
+            const today = todayStr();
+            document.getElementById('adv-date').value = today;
+            renderAdvancesList();
+            renderTransactions();
+        }
+
+        function renderAdvancesList() {
+            const container = document.getElementById('advances-list');
+            container.innerHTML = '';
+
+            let unsettledCount = 0;
+            let unsettledTotal = 0;
+
+            advances.forEach(adv => {
+                if (adv.status === 'unsettled') {
+                    unsettledCount++;
+                    unsettledTotal += adv.amount;
+                }
+            });
+
+            document.getElementById('adv-unsettled-summary').textContent = `未精算 ${unsettledCount}件 / 計 ¥${unsettledTotal.toLocaleString()}`;
+
+            if (advances.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-400 py-8 text-sm">仮払いデータはまだありません。</p>';
+                return;
+            }
+
+            advances.forEach(adv => {
+                const card = document.createElement('div');
+                card.className = 'border rounded-xl p-4 bg-slate-50 space-y-3';
+
+                let statusBadge = '';
+                if (adv.status === 'unsettled') statusBadge = '<span class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full">🟠 未精算</span>';
+                else if (adv.status === 'refund_pending') statusBadge = '<span class="bg-rose-100 text-rose-800 text-xs font-bold px-2.5 py-1 rounded-full">🔴 返金待ち</span>';
+                else if (adv.status === 'additional_pending') statusBadge = '<span class="bg-rose-100 text-rose-800 text-xs font-bold px-2.5 py-1 rounded-full">🔴 追加支給待ち</span>';
+                else if (adv.status === 'completed') statusBadge = '<span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full">🟢 精算済み</span>';
+
+                let actionArea = '';
+
+                if (adv.status === 'unsettled') {
+                    actionArea = `
+                        <button onclick="openSettleModal('${adv.id}')" class="px-4 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700">
+                            <i class="fa-solid fa-calculator mr-1"></i>精算する
+                        </button>
+                    `;
+                } else if (adv.status === 'refund_pending') {
+                    actionArea = `
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-xs text-rose-700 font-bold">返金予定: ¥${adv.refundAmount.toLocaleString()}</span>
+                            <button onclick="confirmRefundReceived('${adv.id}')" class="px-4 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-lg hover:bg-rose-700">
+                                <i class="fa-solid fa-hand-holding-hand mr-1"></i>${adv.refundAmount.toLocaleString()}円を受け取りました
+                            </button>
+                            <button onclick="cancelSettlementPrompt('${adv.id}')" class="px-3 py-1.5 border border-slate-300 text-slate-600 text-xs rounded-lg hover:bg-slate-100">
+                                精算を取り消す
+                            </button>
+                        </div>
+                    `;
+                } else if (adv.status === 'additional_pending') {
+                    actionArea = `
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-xs text-rose-700 font-bold">追加支給: ¥${adv.additionalAmount.toLocaleString()}</span>
+                            <button onclick="confirmAdditionalPaid('${adv.id}')" class="px-4 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-lg hover:bg-rose-700">
+                                <i class="fa-solid fa-hand-holding-dollar mr-1"></i>${adv.additionalAmount.toLocaleString()}円を渡しました
+                            </button>
+                            <button onclick="cancelSettlementPrompt('${adv.id}')" class="px-3 py-1.5 border border-slate-300 text-slate-600 text-xs rounded-lg hover:bg-slate-100">
+                                精算を取り消す
+                            </button>
+                        </div>
+                    `;
+                } else if (adv.status === 'completed') {
+                    actionArea = `
+                        <div class="flex items-center gap-2">
+                            <button onclick="openEditSettleModal('${adv.id}')" class="px-3 py-1.5 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-300">
+                                精算内容を見る・費用内訳訂正
+                            </button>
+                        </div>
+                    `;
+                }
+
+                let itemsSummaryHtml = '';
+                if (adv.items && adv.items.length > 0) {
+                    itemsSummaryHtml = `
+                        <div class="mt-2 text-xs bg-white p-2.5 rounded-lg border divide-y divide-slate-100">
+                            <strong class="block text-slate-600 mb-1">使用明細 (合計 ¥${adv.totalUsed.toLocaleString()}):</strong>
+                            ${adv.items.map(it => `
+                                <div class="py-1 flex justify-between items-center text-slate-700">
+                                    <span>${it.date} [${it.category}] ${it.description} (${it.payee || ''})${it.receiptNo ? ' No.' + it.receiptNo : ''}</span>
+                                    <span class="font-mono font-medium">¥${parseInt(it.amount, 10).toLocaleString()}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="flex flex-wrap justify-between items-start gap-2 border-b pb-2">
+                        <div>
+                            <span class="text-xs text-slate-500 font-mono">${adv.date}</span>
+                            <h4 class="font-bold text-slate-800 text-sm">${adv.person} 様 <span class="text-xs font-normal text-slate-500">(${adv.purpose})</span></h4>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            ${statusBadge}
+                            <span class="text-base font-extrabold text-slate-800">仮払額: ¥${adv.amount.toLocaleString()}</span>
+                        </div>
+                    </div>
+                    ${itemsSummaryHtml}
+                    <div class="flex justify-between items-center pt-1">
+                        <div></div>
+                        <div>${actionArea}</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        /* Settlement Logic Functions */
+        let settleItemCount = 0;
+
+        function openSettleModal(advId) {
+            const adv = advances.find(a => a.id === advId);
+            if (!adv) return;
+
+            document.getElementById('settle-adv-id').value = adv.id;
+            document.getElementById('settle-info-person').textContent = adv.person;
+            document.getElementById('settle-info-date').textContent = adv.date;
+            document.getElementById('settle-info-purpose').textContent = adv.purpose;
+            document.getElementById('settle-info-amount').textContent = `¥${adv.amount.toLocaleString()}`;
+
+            const container = document.getElementById('settle-items-container');
+            container.innerHTML = '';
+            settleItemCount = 0;
+
+            addSettleItemRow();
+            recalcSettleDiff();
+
+            document.getElementById('settle-modal').classList.remove('hidden');
+        }
+
+        function closeSettleModal() {
+            document.getElementById('settle-modal').classList.add('hidden');
+        }
+
+        function addSettleItemRow(data = null) {
+            settleItemCount++;
+            const container = document.getElementById('settle-items-container');
+            const rowId = `settle-row-${settleItemCount}`;
+
+            const today = todayStr();
+
+            const div = document.createElement('div');
+            div.id = rowId;
+            div.className = 'p-3 bg-slate-50 rounded-lg border space-y-2 relative';
+
+            let optionsHtml = CATEGORIES.expense.map(c => `<option value="${c}">${c}</option>`).join('');
+
+            div.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-2">
+                    <div class="md:col-span-3">
+                        <label class="block text-[10px] text-slate-500">日付</label>
+                        <input type="date" value="${data ? data.date : today}" required class="s-item-date w-full px-2 py-1 border rounded text-xs outline-none">
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-[10px] text-slate-500">科目</label>
+                        <select class="s-item-cat w-full px-2 py-1 border rounded text-xs outline-none">
+                            ${optionsHtml}
+                        </select>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-[10px] text-slate-500">金額 (円)</label>
+                        <input type="number" min="1" value="${data ? data.amount : ''}" oninput="recalcSettleDiff()" required placeholder="例: 3200" class="s-item-amount w-full px-2 py-1 border rounded text-xs outline-none">
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-[10px] text-slate-500">支払先</label>
+                        <input type="text" value="${data ? data.payee : ''}" placeholder="例: 〇〇文具" class="s-item-payee w-full px-2 py-1 border rounded text-xs outline-none">
+                    </div>
+                    <div class="md:col-span-8">
+                        <label class="block text-[10px] text-slate-500">内容・摘要</label>
+                        <input type="text" value="${data ? data.description : ''}" required placeholder="例: バザー用用紙" class="s-item-desc w-full px-2 py-1 border rounded text-xs outline-none">
+                    </div>
+                    <div class="md:col-span-4 flex items-end justify-between gap-1">
+                        <div class="w-full">
+                            <label class="block text-[10px] text-slate-500">証憑番号</label>
+                            <input type="text" value="${data && data.receiptNo ? data.receiptNo : ''}" placeholder="例: 13" class="s-item-receipt w-full px-2 py-1 border rounded text-xs outline-none">
+                        </div>
+                        <button type="button" onclick="document.getElementById('${rowId}').remove(); recalcSettleDiff();" class="text-rose-500 hover:text-rose-700 px-2 py-1 text-xs">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(div);
+            if (data && data.category) {
+                div.querySelector('.s-item-cat').value = data.category;
+            }
+        }
+
+        function recalcSettleDiff() {
+            const advId = document.getElementById('settle-adv-id').value;
+            const adv = advances.find(a => a.id === advId);
+            if (!adv) return;
+
+            const amountInputs = document.querySelectorAll('.s-item-amount');
+            let totalUsed = 0;
+            amountInputs.forEach(inp => {
+                const val = parseInt(inp.value, 10);
+                if (!isNaN(val)) totalUsed += val;
+            });
+
+            document.getElementById('settle-total-used').textContent = `¥${totalUsed.toLocaleString()}`;
+
+            const diff = totalUsed - adv.amount; // > 0: 不足(追加支給), < 0: 余り(返金)
+            const labelEl = document.getElementById('settle-diff-label');
+            const valueEl = document.getElementById('settle-diff-value');
+
+            if (diff === 0) {
+                labelEl.textContent = '差額判定:';
+                valueEl.textContent = 'ぴったり差額0円 (精算完了)';
+                valueEl.className = 'text-emerald-700 font-bold';
+            } else if (diff < 0) {
+                const refund = Math.abs(diff);
+                labelEl.textContent = '返金手渡し予定:';
+                valueEl.textContent = `${refund.toLocaleString()}円 を返金受領`;
+                valueEl.className = 'text-rose-600 font-bold';
+            } else {
+                labelEl.textContent = '追加支給手渡し予定:';
+                valueEl.textContent = `${diff.toLocaleString()}円 を追加手渡し`;
+                valueEl.className = 'text-rose-600 font-bold';
+            }
+        }
+
+        async function handleConfirmSettlement(event) {
+            event.preventDefault();
+            const advId = document.getElementById('settle-adv-id').value;
+            const adv = advances.find(a => a.id === advId);
+            if (!adv) return;
+
+            const rows = document.querySelectorAll('#settle-items-container > div');
+            let items = [];
+            let totalUsed = 0;
+
+            for (let row of rows) {
+                const date = row.querySelector('.s-item-date').value;
+                const category = row.querySelector('.s-item-cat').value;
+                const amount = parseInt(row.querySelector('.s-item-amount').value, 10);
+                const payee = row.querySelector('.s-item-payee').value;
+                const description = row.querySelector('.s-item-desc').value;
+                const receiptNo = row.querySelector('.s-item-receipt').value.trim();
+
+                items.push({
+                    id: Date.now().toString() + Math.random().toString(36).substring(2, 5),
+                    date,
+                    category,
+                    amount,
+                    payee,
+                    description,
+                    receiptNo,
+                    photo: null
+                });
+
+                totalUsed += amount;
+            }
+
+            adv.items = items;
+            adv.totalUsed = totalUsed;
+
+            const diff = totalUsed - adv.amount;
+
+            if (diff === 0) {
+                adv.status = 'completed';
+                adv.refundAmount = 0;
+                adv.additionalAmount = 0;
+            } else if (diff < 0) {
+                adv.status = 'refund_pending';
+                adv.refundAmount = Math.abs(diff);
+                adv.additionalAmount = 0;
+            } else {
+                adv.status = 'additional_pending';
+                adv.additionalAmount = diff;
+                adv.refundAmount = 0;
+            }
+
+            saveLocalData();
+            closeSettleModal();
+            renderAdvancesList();
+            renderSummary();
+            renderTransactions();
+        }
+
+        function confirmRefundReceived(advId) {
+            const adv = advances.find(a => a.id === advId);
+            if (!adv) return;
+
+            if (confirm(`【現金確認】\n${adv.person} 様より返金分 ${adv.refundAmount.toLocaleString()}円 を受け取りましたか？\n（手元現金残高に加算されます）`)) {
+                adv.status = 'completed';
+                adv.refundReceivedDate = todayStr();
+                adv.cancelledRefundDate = null;
+                saveLocalData();
+                renderAdvancesList();
+                renderTransactions();
+            }
+        }
+
+        function confirmAdditionalPaid(advId) {
+            const adv = advances.find(a => a.id === advId);
+            if (!adv) return;
+
+            if (confirm(`【現金確認】\n${adv.person} 様へ不足分 ${adv.additionalAmount.toLocaleString()}円 を渡しましたか？\n（手元現金残高から減算されます）`)) {
+                adv.status = 'completed';
+                adv.additionalPaidDate = todayStr();
+                adv.cancelledAdditionalDate = null;
+                saveLocalData();
+                renderAdvancesList();
+                renderTransactions();
+            }
+        }
+
+        function cancelSettlementPrompt(advId) {
+            const adv = advances.find(a => a.id === advId);
+            if (!adv) return;
+
+            if (confirm('精算を取り消しますか？\n\n登録された使用明細の正式費用確定が削除され、状態が「未精算」に戻ります。（※最初の仮払手渡し金は保持されます）')) {
+                adv.status = 'unsettled';
+                adv.items = [];
+                adv.totalUsed = 0;
+                adv.refundAmount = 0;
+                adv.additionalAmount = 0;
+
+                saveLocalData();
+                renderAdvancesList();
+                renderSummary();
+                renderTransactions();
+            }
+        }
+
+        /* Edit Settle Modal (費用内訳訂正 & 精算取消) */
+        function openEditSettleModal(advId) {
+            const adv = advances.find(a => a.id === advId);
+            if (!adv) return;
+
+            document.getElementById('edit-settle-adv-id').value = adv.id;
+            const container = document.getElementById('edit-settle-items-container');
+            container.innerHTML = '';
+
+            adv.items.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = 'p-3 bg-slate-50 rounded border space-y-1 text-xs';
+                let optionsHtml = CATEGORIES.expense.map(c => `<option value="${c}" ${c === item.category ? 'selected' : ''}>${c}</option>`).join('');
+
+                div.innerHTML = `
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[10px] text-slate-500">日付</label>
+                            <input type="date" value="${item.date}" class="es-date w-full border rounded px-2 py-1">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-500">科目</label>
+                            <select class="es-cat w-full border rounded px-2 py-1">${optionsHtml}</select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[10px] text-slate-500">金額</label>
+                            <input type="number" value="${item.amount}" readonly class="es-amount w-full border rounded px-2 py-1 bg-slate-100">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-500">支払先</label>
+                            <input type="text" value="${item.payee || ''}" class="es-payee w-full border rounded px-2 py-1">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-500">摘要</label>
+                        <input type="text" value="${item.description}" class="es-desc w-full border rounded px-2 py-1">
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            // History Display
+            const histList = document.getElementById('edit-settle-history-list');
+            histList.innerHTML = '';
+            if (adv.history && adv.history.length > 0) {
+                adv.history.forEach(h => {
+                    const li = document.createElement('li');
+                    let detailStr = '';
+                    if (h.before && h.after) {
+                        const beforeStr = Array.isArray(h.before) ? h.before.map(b => `${b.category} ¥${parseInt(b.amount,10).toLocaleString()} (${b.description})`).join('; ') : '';
+                        const afterStr = Array.isArray(h.after) ? h.after.map(a => `${a.category} ¥${parseInt(a.amount,10).toLocaleString()} (${a.description})`).join('; ') : '';
+                        detailStr = `<br><span class="text-slate-500">【訂正前】${beforeStr || 'なし'}</span><br><span class="text-slate-500">【訂正後】${afterStr || 'なし'}</span>`;
+                    }
+                    li.innerHTML = `<strong>[${h.date}] ${h.action}</strong>: ${h.reason || ''}${detailStr}`;
+                    histList.appendChild(li);
+                });
+            } else {
+                histList.innerHTML = '<li>履歴はありません</li>';
+            }
+
+            document.getElementById('edit-settle-modal').classList.remove('hidden');
+        }
+
+        function closeEditSettleModal() {
+            document.getElementById('edit-settle-modal').classList.add('hidden');
+        }
+
+        function handleSaveEditedSettle(event) {
+            event.preventDefault();
+            const advId = document.getElementById('edit-settle-adv-id').value;
+            const adv = advances.find(a => a.id === advId);
+            if (!adv) return;
+
+            const reason = document.getElementById('edit-settle-reason').value;
+            const rows = document.querySelectorAll('#edit-settle-items-container > div');
+
+            const beforeItems = adv.items.map(item => ({
+                date: item.date,
+                category: item.category,
+                amount: item.amount,
+                payee: item.payee || '',
+                description: item.description
+            }));
+
+            rows.forEach((row, idx) => {
+                if (adv.items[idx]) {
+                    adv.items[idx].date = row.querySelector('.es-date').value;
+                    adv.items[idx].category = row.querySelector('.es-cat').value;
+                    adv.items[idx].payee = row.querySelector('.es-payee').value;
+                    adv.items[idx].description = row.querySelector('.es-desc').value;
+                }
+            });
+
+            const afterItems = adv.items.map(item => ({
+                date: item.date,
+                category: item.category,
+                amount: item.amount,
+                payee: item.payee || '',
+                description: item.description
+            }));
+
+            if (!adv.history) adv.history = [];
+            adv.history.push({
+                date: new Date().toLocaleString('ja-JP'),
+                action: '費用内訳の訂正',
+                before: beforeItems,
+                after: afterItems,
+                reason: reason
+            });
+
+            saveLocalData();
+            closeEditSettleModal();
+            renderAdvancesList();
+            renderSummary();
+            alert('費用内訳の訂正を保存しました。（手元現金残高には影響しません）');
+        }
+
+        function handleCancelAndResetSettle() {
+            const advId = document.getElementById('edit-settle-adv-id').value;
+            const adv = advances.find(a => a.id === advId);
+            if (!adv) return;
+
+            const reason = prompt('【確認】現金受渡しを含めて精算を取り消します。\n現金の調整を行うための理由を入力してください:');
+            if (reason === null) return;
+
+            const today = todayStr();
+
+            // 過去の現金移動記録は消さずに維持し、打ち消し（調整）処理フラグをセット
+            if (adv.refundReceivedDate) {
+                adv.cancelledRefundDate = today;
+            }
+            if (adv.additionalPaidDate) {
+                adv.cancelledAdditionalDate = today;
+            }
+
+            const beforeItems = adv.items ? adv.items.map(item => ({
+                date: item.date,
+                category: item.category,
+                amount: item.amount,
+                payee: item.payee || '',
+                description: item.description
+            })) : [];
+
+            if (!adv.history) adv.history = [];
+            adv.history.push({
+                date: new Date().toLocaleString('ja-JP'),
+                action: '精算・現金受渡し取り消し',
+                before: beforeItems,
+                after: [],
+                reason: reason || '理由未入力'
+            });
+
+            adv.status = 'unsettled';
+            adv.items = [];
+            adv.totalUsed = 0;
+            adv.refundAmount = 0;
+            adv.additionalAmount = 0;
+
+            saveLocalData();
+            closeEditSettleModal();
+            renderAdvancesList();
+            renderSummary();
+            renderTransactions();
+            alert('精算および現金受渡しの取り消しを完了しました。現金打消し調整レコードが反映され、仮払いは未精算に戻ります。');
+        }
+
+        /* --- Vouchers & Receipt List Logic --- */
+        function openVoucherModal(targetId, targetType) {
+            const target = transactions.find(t => t.id === targetId);
+            if (!target) return;
+
+            // 既存の出金伝票が存在しないか二重チェック
+            const existingVoucher = paymentVouchers.find(v => v.targetId === targetId);
+            if (existingVoucher) {
+                alert('この支出には既に出金伝票が作成されています。');
+                return;
+            }
+
+            document.getElementById('v-target-id').value = target.id;
+            document.getElementById('v-target-type').value = targetType;
+            document.getElementById('v-date').value = target.date;
+            document.getElementById('v-category').value = target.category;
+            document.getElementById('v-amount').value = target.amount;
+            document.getElementById('v-description').value = target.description;
+            document.getElementById('v-payee').value = '';
+
+            document.getElementById('voucher-modal').classList.remove('hidden');
+        }
+
+        function closeVoucherModal() {
+            document.getElementById('voucher-modal').classList.add('hidden');
+        }
+
+        function handleSaveVoucher(event) {
+            event.preventDefault();
+
+            const targetId = document.getElementById('v-target-id').value;
+            const targetType = document.getElementById('v-target-type').value;
+            const date = document.getElementById('v-date').value;
+            const category = document.getElementById('v-category').value;
+            const amount = parseInt(document.getElementById('v-amount').value, 10);
+            const description = document.getElementById('v-description').value;
+            const payee = document.getElementById('v-payee').value;
+            const reason = document.getElementById('v-reason').value;
+
+            // 防御的チェック（重複作成防止）
+            const existingVoucher = paymentVouchers.find(v => v.targetId === targetId);
+            if (existingVoucher) {
+                alert('この支出には既に出金伝票が作成されています。');
+                closeVoucherModal();
+                return;
+            }
+
+            const voucher = {
+                id: Date.now().toString(),
+                voucherNo: `V-${Date.now().toString().slice(-6)}`,
+                targetId,
+                targetType,
+                date,
+                category,
+                amount,
+                description,
+                payee,
+                reason,
+                createdAt: todayStr()
+            };
+
+            paymentVouchers.push(voucher);
+            saveLocalData();
+            closeVoucherModal();
+            
+            // 関連ビューをすべて再描写
+            renderTransactions();
+            renderVoucherList();
+            
+            alert('出金伝票を発行・保存しました。');
+        }
+
+        function renderVoucherList() {
+            const monthFilter = document.getElementById('voucher-month-filter').value;
+            const container = document.getElementById('voucher-display-container');
+            container.innerHTML = '';
+
+            let photoCount = 0;
+            let approxBytes = 0;
+
+            // Calculate Storage & Filter
+            transactions.forEach(t => {
+                if (t.photo) {
+                    photoCount++;
+                    approxBytes += t.photo.length;
+                }
+            });
+            advances.forEach(a => {
+                a.items.forEach(i => {
+                    if (i.photo) {
+                        photoCount++;
+                        approxBytes += i.photo.length;
+                    }
+                });
+            });
+
+            const mbSize = (approxBytes / (1024 * 1024)).toFixed(1);
+            document.getElementById('voucher-photo-count').textContent = `${photoCount}枚`;
+            document.getElementById('voucher-storage-size').textContent = `${mbSize}MB`;
+
+            // Filter ledger transactions for chosen month (Only expense items require vouchers/receipts)
+            const filteredLedger = transactions.filter(t => t.date.startsWith(monthFilter) && t.type === 'expense');
+
+            if (filteredLedger.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-400 py-12 text-sm">該当する月の支出（証憑・出金伝票）はありません。</p>';
+                return;
+            }
+
+            // Render monthly summary list
+            filteredLedger.forEach(t => {
+                const voucher = paymentVouchers.find(v => v.targetId === t.id);
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'border rounded-xl p-4 bg-white space-y-3 page-break';
+
+                let voucherDetailHtml = '';
+                if (t.receiptNo) {
+                    voucherDetailHtml = `
+                        <div class="mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 font-semibold">
+                            領収書原本 No.${t.receiptNo}（紙で保管）
+                        </div>
+                    `;
+                } else if (t.photo) {
+                    voucherDetailHtml = `
+                        <div class="mt-2 flex flex-col items-center bg-slate-900 p-2 rounded">
+                            <img src="${t.photo}" class="max-h-64 object-contain rounded">
+                        </div>
+                    `;
+                } else if (voucher) {
+                    voucherDetailHtml = `
+                        <div class="mt-3 border-2 border-dashed border-slate-300 p-4 rounded-lg bg-amber-50/50">
+                            <div class="flex justify-between border-b pb-2 mb-2 font-bold text-xs text-slate-700">
+                                <span>【出金伝票】 伝票番号: ${voucher.voucherNo}</span>
+                                <span>作成日: ${voucher.createdAt}</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-xs text-slate-800">
+                                <div>日付: <strong>${voucher.date}</strong></div>
+                                <div>金額: <strong>¥${voucher.amount.toLocaleString()}</strong></div>
+                                <div>勘定科目: <strong>${voucher.category}</strong></div>
+                                <div>支払先: <strong>${voucher.payee}</strong></div>
+                                <div class="col-span-2">摘要・内容: ${voucher.description}</div>
+                                <div class="col-span-2 text-amber-900">領収書がない理由: ${voucher.reason}</div>
+                            </div>
+                            <div class="mt-4 flex justify-end gap-6 text-[10px] text-slate-500 pt-2 border-t border-slate-200">
+                                <div class="border px-4 py-2 text-center">会長印</div>
+                                <div class="border px-4 py-2 text-center">会計印</div>
+                                <div class="border px-4 py-2 text-center">取扱者印</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    voucherDetailHtml = `
+                        <div class="mt-3 p-3 bg-amber-50/80 border border-amber-200 rounded-lg flex flex-wrap items-center justify-between gap-2 no-print">
+                            <div class="flex items-center gap-2 text-amber-800 text-xs font-semibold">
+                                <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
+                                <span>領収書写真なし ・ 出金伝票未登録</span>
+                            </div>
+                            <button onclick="openVoucherModal('${t.id}', 'ledger')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm">
+                                <i class="fa-solid fa-file-circle-plus"></i>出金伝票を作成
+                            </button>
+                        </div>
+                        <div class="print-only text-xs text-slate-400 italic mt-2">
+                            ※領収書写真・出金伝票未登録
+                        </div>
+                    `;
+                }
+
+                let badgeHtml = '';
+                if (t.receiptNo) {
+                    badgeHtml = `<span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full">🧾 証憑 No.${t.receiptNo}</span>`;
+                } else if (t.photo) {
+                    badgeHtml = '<span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full">📷 領収書写真あり</span>';
+                } else if (voucher) {
+                    badgeHtml = '<span class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-0.5 rounded-full">🟢 出金伝票あり</span>';
+                } else {
+                    badgeHtml = '<span class="bg-slate-100 text-slate-600 text-xs font-bold px-2.5 py-0.5 rounded-full">⚪ 出金伝票未登録</span>';
+                }
+
+                itemDiv.innerHTML = `
+                    <div class="flex justify-between items-start border-b pb-2">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-xs font-mono text-slate-500">${t.date}</span>
+                                ${badgeHtml}
+                            </div>
+                            <h4 class="font-bold text-slate-800 text-sm">[${t.category}] ${t.description}</h4>
+                        </div>
+                        <span class="text-base font-mono font-bold text-slate-800">¥${t.amount.toLocaleString()}</span>
+                    </div>
+                    ${voucherDetailHtml}
+                `;
+
+                container.appendChild(itemDiv);
+            });
+        }
+
+        /* --- Modals --- */
+        function openImageModal(photoUrl, title) {
+            document.getElementById('modal-image').src = photoUrl;
+            document.getElementById('modal-title').textContent = `領収書プレビュー: ${title}`;
+            document.getElementById('image-modal').classList.remove('hidden');
+        }
+
+        function closeImageModal() {
+            document.getElementById('image-modal').classList.add('hidden');
+        }
+
+        /* --- LocalStorage & Backup (Key Separation & Backwards Compatibility) --- */
+        function saveLocalData() {
+            try {
+                localStorage.setItem('parents_association_ledger', JSON.stringify(transactions));
+                localStorage.setItem('parents_association_advances', JSON.stringify(advances));
+                localStorage.setItem('parents_association_vouchers', JSON.stringify(paymentVouchers));
+            } catch (e) {
+                alert('ストレージ容量の上限に達した可能性があります。不要な画像を整理してください。');
+            }
+        }
+
+        function loadLocalData() {
+            try {
+                const savedLedger = localStorage.getItem('parents_association_ledger');
+                if (savedLedger) transactions = JSON.parse(savedLedger);
+
+                const savedAdvances = localStorage.getItem('parents_association_advances');
+                if (savedAdvances) advances = JSON.parse(savedAdvances);
+
+                const savedVouchers = localStorage.getItem('parents_association_vouchers');
+                if (savedVouchers) paymentVouchers = JSON.parse(savedVouchers);
+            } catch (e) {
+                console.error('Data load error', e);
+            }
+        }
+
+        function exportBackupJSON() {
+            if (transactions.length === 0 && advances.length === 0) {
+                alert('保存するデータがありません。');
+                return;
+            }
+
+            try {
+                const backupObj = {
+                    version: 2,
+                    exportedAt: new Date().toISOString(),
+                    transactions: transactions,
+                    advances: advances,
+                    paymentVouchers: paymentVouchers
+                };
+
+                const jsonStr = JSON.stringify(backupObj, null, 2);
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const downloadAnchor = document.createElement('a');
+                const today = todayStr();
+                downloadAnchor.href = url;
+                downloadAnchor.download = `保護者会出納帳_全バックアップ_${today}.json`;
+                
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                
+                setTimeout(() => {
+                    document.body.removeChild(downloadAnchor);
+                    URL.revokeObjectURL(url);
+                }, 100);
+            } catch (err) {
+                alert('ファイルの保存処理に失敗しました。');
+            }
+        }
+
+        function importBackupJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result;
+                    const parsed = JSON.parse(text);
+
+                    if (Array.isArray(parsed)) {
+                        // Old Version (Array format)
+                        transactions = parsed;
+                        advances = [];
+                        paymentVouchers = [];
+                    } else if (typeof parsed === 'object' && parsed !== null) {
+                        // New Version 2 or Object Backup
+                        transactions = parsed.transactions || [];
+                        advances = parsed.advances || [];
+                        paymentVouchers = parsed.paymentVouchers || [];
+                    }
+
+                    // Properties Normalization for backwards compatibility
+                    advances.forEach(adv => {
+                        if (!adv.status) adv.status = 'unsettled';
+                        if (!adv.items) adv.items = [];
+                        if (!adv.history) adv.history = [];
+                    });
+
+                    saveLocalData();
+                    renderTransactions();
+                    renderAdvancesList();
+                    alert('データを正常に復元・修正インポートしました。');
+                } catch (err) {
+                    alert('無効なファイル形式です。復元に失敗しました。');
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function exportToCSV() {
+            const events = getAllCashEvents();
+            if (events.length === 0) {
+                alert('出力するデータがありません。');
+                return;
+            }
+
+            let csvContent = "\uFEFF日付,区分,勘定科目,摘要,支払区分,証憑番号,収入金額,支出金額,残高\n";
+            let csvBalance = 0;
+
+            events.forEach(e => {
+                const isIncome = e.type === 'income';
+                csvBalance += isIncome ? e.amount : -e.amount;
+                const receiptNo = (e.raw && e.raw.receiptNo) ? e.raw.receiptNo : '';
+                const incomeStr = isIncome ? e.amount : '';
+                const expenseStr = !isIncome ? e.amount : '';
+                const row = [
+                    `"${e.date}"`,
+                    `"${isIncome ? '収入' : '支出'}"`,
+                    `"${e.category}"`,
+                    `"${e.description.replace(/"/g, '""')}"`,
+                    `"${e.method || '現金'}"`,
+                    `"${String(receiptNo).replace(/"/g, '""')}"`,
+                    `"${incomeStr}"`,
+                    `"${expenseStr}"`,
+                    `"${csvBalance}"`
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            const today = todayStr();
+            link.setAttribute("href", url);
+            link.setAttribute("download", `保護者会現金出納帳_${today}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function clearAllData() {
+            if (confirm('【ご注意】すべての明細、仮払・精算データ、出金伝票、領収書写真が消去されます。\n本当に実行してよろしいですか？')) {
+                localStorage.removeItem('parents_association_ledger');
+                localStorage.removeItem('parents_association_advances');
+                localStorage.removeItem('parents_association_vouchers');
+                transactions = [];
+                advances = [];
+                paymentVouchers = [];
+                renderTransactions();
+                renderAdvancesList();
+                alert('すべてのデータを初期化しました。');
+            }
+        }
+    </script>
+</body>
+</html>
