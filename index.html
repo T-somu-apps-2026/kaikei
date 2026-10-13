@@ -81,32 +81,28 @@
         </div>
 
         <!-- Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 no-print">
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                <div>
-                    <span class="text-xs text-slate-500 font-bold block mb-1">総収入金額</span>
-                    <span id="stat-income" class="text-xl font-bold text-emerald-600">¥0</span>
-                </div>
-                <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                    <i class="fa-solid fa-arrow-down"></i>
-                </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 no-print">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <span class="text-xs text-slate-500 font-bold block mb-1"><i class="fa-solid fa-arrow-down text-emerald-600 mr-1"></i>総収入金額</span>
+                <span id="stat-income" class="text-lg font-bold text-emerald-600">¥0</span>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                <div>
-                    <span class="text-xs text-slate-500 font-bold block mb-1">総支出金額</span>
-                    <span id="stat-expense" class="text-xl font-bold text-rose-600">¥0</span>
-                </div>
-                <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center">
-                    <i class="fa-solid fa-arrow-up"></i>
-                </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <span class="text-xs text-slate-500 font-bold block mb-1"><i class="fa-solid fa-arrow-up text-rose-600 mr-1"></i>総支出金額</span>
+                <span id="stat-expense" class="text-lg font-bold text-rose-600">¥0</span>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
-                <div>
-                    <span class="text-xs text-emerald-100 font-bold block mb-1">現在残高 (手元現金)</span>
-                    <span id="stat-balance" class="text-2xl font-extrabold">¥0</span>
+            <div class="col-span-2 p-4 rounded-xl shadow-sm bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-xs text-emerald-100 font-bold block mb-1">現金残高 (手元現金)</span>
+                        <span id="stat-balance" class="text-2xl font-extrabold">¥0</span>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
                 </div>
-                <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
-                    <i class="fa-solid fa-wallet"></i>
+                <div id="bank-balance-row" class="hidden mt-3 pt-2 border-t border-white/30 grid grid-cols-2 gap-2 text-sm">
+                    <div><span class="text-xs text-emerald-100 block">口座残高</span><strong id="stat-bank">¥0</strong></div>
+                    <div><span class="text-xs text-emerald-100 block">合計 (現金＋口座)</span><strong id="stat-total">¥0</strong></div>
                 </div>
             </div>
         </div>
@@ -129,6 +125,7 @@
                         <select id="input-type" required onchange="updateCategoryOptions()" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
                             <option value="expense">支出 (払い)</option>
                             <option value="income">収入 (預かり)</option>
+                            <option value="transfer">資金移動 (預け入れ・引き出し)</option>
                         </select>
                     </div>
 
@@ -148,7 +145,7 @@
                         <input type="text" id="input-description" required placeholder="例: 総会お茶代、文房具購入など" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
                     </div>
 
-                    <div class="md:col-span-3">
+                    <div class="md:col-span-3" id="method-wrap">
                         <label class="block text-xs font-semibold text-slate-600 mb-1">支払/保管区分</label>
                         <select id="input-method" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
                             <option value="現金">現金</option>
@@ -180,6 +177,12 @@
                     </div>
                     
                     <div class="flex flex-wrap items-center gap-2">
+                        <select id="filter-account" onchange="renderTransactions()" class="px-3 py-1.5 border rounded-lg text-xs outline-none bg-white">
+                            <option value="all">現金＋口座</option>
+                            <option value="現金">現金のみ</option>
+                            <option value="銀行口座">口座のみ</option>
+                        </select>
+
                         <select id="filter-category" onchange="renderTransactions()" class="px-3 py-1.5 border rounded-lg text-xs outline-none bg-white">
                             <option value="all">すべての科目</option>
                         </select>
@@ -209,7 +212,7 @@
                                 <th class="py-3 px-3">摘要・内容</th>
                                 <th class="py-3 px-3 text-right">収入金額</th>
                                 <th class="py-3 px-3 text-right">支出金額</th>
-                                <th class="py-3 px-3 text-right">差引残高</th>
+                                <th id="balance-header" class="py-3 px-3 text-right">合計残高</th>
                                 <th class="py-3 px-3 text-center no-print">領収書/伝票</th>
                                 <th class="py-3 px-3 text-center no-print">操作</th>
                             </tr>
@@ -603,6 +606,7 @@
     <script>
         const CATEGORIES = {
             income: ['前年度繰越金', '会費収入', '補助金収入', 'イベント収入', '雑収入'],
+            transfer: ['預け入れ (現金→口座)', '引き出し (口座→現金)'],
             expense: ['会場費', 'お茶・飲食代', '印刷製本費', '消耗品費・文房具', '行事・イベント費', '総会・役員会費', '慶弔費', '雑費']
         };
 
@@ -662,6 +666,8 @@
             const categorySelect = document.getElementById('input-category');
             const filterSelect = document.getElementById('filter-category');
 
+            document.getElementById('method-wrap').classList.toggle('hidden', type === 'transfer');
+
             categorySelect.innerHTML = '';
             CATEGORIES[type].forEach(cat => {
                 const opt = document.createElement('option');
@@ -694,6 +700,9 @@
                     category: t.category,
                     description: t.description,
                     method: t.method || '現金',
+                    account: t.type === 'transfer' ? null : (t.method || '現金'),
+                    from: t.from || null,
+                    to: t.to || null,
                     amount: t.amount,
                     photo: t.photo || null,
                     raw: t
@@ -781,8 +790,51 @@
                 }
             });
 
+            // 仮払関連の現金移動はすべて「現金」
+            events.forEach(e => {
+                if (e.type !== 'transfer' && !e.account) e.account = e.method || '現金';
+            });
+
             events.sort((a, b) => new Date(a.date) - new Date(b.date));
             return events;
+        }
+
+        // 指定した口座（'現金' / '銀行口座' / 'all'）の残高がいくら動くか
+        function eventDelta(e, acct) {
+            if (e.type === 'transfer') {
+                if (acct === 'all') return 0;
+                let d = 0;
+                if (e.to === acct) d += e.amount;
+                if (e.from === acct) d -= e.amount;
+                return d;
+            }
+            if (acct !== 'all' && e.account !== acct) return 0;
+            return e.type === 'income' ? e.amount : -e.amount;
+        }
+
+        function eventRelevant(e, acct) {
+            if (acct === 'all') return true;
+            if (e.type === 'transfer') return e.from === acct || e.to === acct;
+            return e.account === acct;
+        }
+
+        // 現金・口座・合計の残高を順に計算して各明細に持たせる
+        function computeBalances(events, viewAcct) {
+            let cash = 0, bank = 0, total = 0, totalIncome = 0, totalExpense = 0, hasBank = false;
+            events.forEach(e => {
+                cash += eventDelta(e, '現金');
+                bank += eventDelta(e, '銀行口座');
+                total += eventDelta(e, 'all');
+                if (e.type === 'income') totalIncome += e.amount;
+                else if (e.type === 'expense') totalExpense += e.amount;
+                if (e.type === 'transfer' || e.account === '銀行口座') hasBank = true;
+                e.cashBalance = cash;
+                e.bankBalance = bank;
+                e.totalBalance = total;
+                e.runningBalance = viewAcct === '現金' ? cash : viewAcct === '銀行口座' ? bank : total;
+                e.viewDelta = eventDelta(e, viewAcct);
+            });
+            return { cash, bank, total, totalIncome, totalExpense, hasBank };
         }
 
         function handleFormSubmit(event) {
@@ -796,6 +848,13 @@
             const method = document.getElementById('input-method').value;
             const receiptNo = document.getElementById('input-receipt-no').value.trim();
 
+            let from = null, to = null, methodVal = method;
+            if (type === 'transfer') {
+                if (category.startsWith('預け入れ')) { from = '現金'; to = '銀行口座'; }
+                else { from = '銀行口座'; to = '現金'; }
+                methodVal = `${from}→${to}`;
+            }
+
             saveTransaction({
                 id: Date.now().toString(),
                 date,
@@ -803,7 +862,9 @@
                 category,
                 amount,
                 description,
-                method,
+                method: methodVal,
+                from,
+                to,
                 receiptNo,
                 photo: null
             });
@@ -830,26 +891,19 @@
 
             const events = getAllCashEvents();
 
-            let currentBalance = 0;
-            let totalIncome = 0;
-            let totalExpense = 0;
+            const filterAcct = document.getElementById('filter-account').value;
+            const b = computeBalances(events, filterAcct);
 
-            events.forEach(e => {
-                if (e.type === 'income') {
-                    totalIncome += e.amount;
-                    currentBalance += e.amount;
-                } else {
-                    totalExpense += e.amount;
-                    currentBalance -= e.amount;
-                }
-                e.runningBalance = currentBalance;
-            });
+            document.getElementById('stat-income').textContent = `¥${b.totalIncome.toLocaleString()}`;
+            document.getElementById('stat-expense').textContent = `¥${b.totalExpense.toLocaleString()}`;
+            document.getElementById('stat-balance').textContent = `¥${b.cash.toLocaleString()}`;
+            document.getElementById('stat-bank').textContent = `¥${b.bank.toLocaleString()}`;
+            document.getElementById('stat-total').textContent = `¥${b.total.toLocaleString()}`;
+            document.getElementById('bank-balance-row').classList.toggle('hidden', !b.hasBank);
+            document.getElementById('balance-header').textContent =
+                filterAcct === '現金' ? '現金残高' : filterAcct === '銀行口座' ? '口座残高' : '合計残高';
 
-            document.getElementById('stat-income').textContent = `¥${totalIncome.toLocaleString()}`;
-            document.getElementById('stat-expense').textContent = `¥${totalExpense.toLocaleString()}`;
-            document.getElementById('stat-balance').textContent = `¥${currentBalance.toLocaleString()}`;
-
-            const filteredEvents = events.filter(e => filterCat === 'all' || e.category === filterCat);
+            const filteredEvents = events.filter(e => eventRelevant(e, filterAcct) && (filterCat === 'all' || e.category === filterCat));
             document.getElementById('record-count').textContent = `${filteredEvents.length}件`;
 
             if (filteredEvents.length === 0) {
@@ -862,6 +916,20 @@
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-50 border-b border-slate-100 transition';
                 const isIncome = e.type === 'income';
+                const isTransfer = e.type === 'transfer';
+                const amt = '¥' + e.amount.toLocaleString();
+                let incomeCell = '-', expenseCell = '-';
+                if (isTransfer) {
+                    if (e.viewDelta > 0) incomeCell = amt;
+                    else if (e.viewDelta < 0) expenseCell = amt;
+                } else if (isIncome) {
+                    incomeCell = amt;
+                } else {
+                    expenseCell = amt;
+                }
+                const badgeClass = isTransfer ? 'bg-sky-100 text-sky-700' : isIncome ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700';
+                const badgeText = isTransfer ? '移動' : isIncome ? '収入' : '支出';
+                const methodNote = isTransfer ? `${e.method}　¥${e.amount.toLocaleString()}` : (e.method || '');
 
                 const hasVoucher = paymentVouchers.some(v => v.targetId === e.id);
 
@@ -873,7 +941,7 @@
                         voucherBtn = `<button onclick="openImageModal('${e.photo}', '${e.description}')" class="text-xs bg-slate-100 text-slate-600 hover:bg-slate-200 px-2 py-1 rounded inline-flex items-center gap-1 border"><i class="fa-solid fa-image text-emerald-600"></i>写真</button>`;
                     } else if (hasVoucher) {
                         voucherBtn = `<span class="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded font-bold border border-amber-200"><i class="fa-solid fa-file-invoice mr-1"></i>伝票済</span>`;
-                    } else if (!isIncome) {
+                    } else if (e.type === 'expense') {
                         voucherBtn = `<button onclick="openVoucherModal('${e.id}', 'ledger')" class="text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded border border-amber-200"><i class="fa-solid fa-plus mr-1"></i>伝票作成</button>`;
                     } else {
                         voucherBtn = `<span class="text-xs text-slate-400">-</span>`;
@@ -892,14 +960,14 @@
                 tr.innerHTML = `
                     <td class="py-3 px-3 font-mono text-xs text-slate-600">${e.date}</td>
                     <td class="py-3 px-3">
-                        <span class="inline-block px-2 py-0.5 rounded text-xs font-bold ${isIncome ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
-                            ${isIncome ? '収入' : '支出'}
+                        <span class="inline-block px-2 py-0.5 rounded text-xs font-bold ${badgeClass}">
+                            ${badgeText}
                         </span>
                     </td>
                     <td class="py-3 px-3 font-medium text-slate-700">${e.category}</td>
-                    <td class="py-3 px-3 text-slate-800">${e.description} <span class="text-xs text-slate-400 block">${e.method || ''}</span></td>
-                    <td class="py-3 px-3 text-right font-mono font-medium text-emerald-600">${isIncome ? '¥' + e.amount.toLocaleString() : '-'}</td>
-                    <td class="py-3 px-3 text-right font-mono font-medium text-rose-600">${!isIncome ? '¥' + e.amount.toLocaleString() : '-'}</td>
+                    <td class="py-3 px-3 text-slate-800">${e.description} <span class="text-xs text-slate-400 block">${methodNote}</span></td>
+                    <td class="py-3 px-3 text-right font-mono font-medium text-emerald-600">${incomeCell}</td>
+                    <td class="py-3 px-3 text-right font-mono font-medium text-rose-600">${expenseCell}</td>
                     <td class="py-3 px-3 text-right font-mono font-bold text-slate-700">¥${e.runningBalance.toLocaleString()}</td>
                     <td class="py-3 px-3 text-center no-print">${voucherBtn}</td>
                     <td class="py-3 px-3 text-center no-print">${deleteBtn}</td>
@@ -938,7 +1006,7 @@
                 if (t.type === 'income') {
                     categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
                     incomeTotal += t.amount;
-                } else {
+                } else if (t.type === 'expense') {
                     categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
                     expenseTotal += t.amount;
                 }
@@ -1829,25 +1897,26 @@
                 return;
             }
 
-            let csvContent = "\uFEFF日付,区分,勘定科目,摘要,支払区分,証憑番号,収入金額,支出金額,残高\n";
-            let csvBalance = 0;
+            let csvContent = "\uFEFF日付,区分,勘定科目,摘要,支払区分,証憑番号,収入金額,支出金額,現金残高,口座残高,合計残高\n";
+            computeBalances(events, 'all');
+            const q = v => `"${String(v).replace(/"/g, '""')}"`;
 
             events.forEach(e => {
                 const isIncome = e.type === 'income';
-                csvBalance += isIncome ? e.amount : -e.amount;
+                const isTransfer = e.type === 'transfer';
                 const receiptNo = (e.raw && e.raw.receiptNo) ? e.raw.receiptNo : '';
-                const incomeStr = isIncome ? e.amount : '';
-                const expenseStr = !isIncome ? e.amount : '';
                 const row = [
-                    `"${e.date}"`,
-                    `"${isIncome ? '収入' : '支出'}"`,
-                    `"${e.category}"`,
-                    `"${e.description.replace(/"/g, '""')}"`,
-                    `"${e.method || '現金'}"`,
-                    `"${String(receiptNo).replace(/"/g, '""')}"`,
-                    `"${incomeStr}"`,
-                    `"${expenseStr}"`,
-                    `"${csvBalance}"`
+                    q(e.date),
+                    q(isTransfer ? '資金移動' : isIncome ? '収入' : '支出'),
+                    q(e.category),
+                    q(e.description),
+                    q(e.method || '現金'),
+                    q(receiptNo),
+                    q(isTransfer ? '' : isIncome ? e.amount : ''),
+                    q(isTransfer ? '' : !isIncome ? e.amount : ''),
+                    q(e.cashBalance),
+                    q(e.bankBalance),
+                    q(e.totalBalance)
                 ];
                 csvContent += row.join(",") + "\n";
             });
