@@ -90,7 +90,7 @@
                 <span class="text-xs text-slate-500 font-bold block mb-1"><i class="fa-solid fa-arrow-up text-rose-600 mr-1"></i>総支出金額</span>
                 <span id="stat-expense" class="text-lg font-bold text-rose-600">¥0</span>
             </div>
-            <div class="col-span-2 p-4 rounded-xl shadow-sm bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+            <div id="balance-card" class="col-span-2 p-4 rounded-xl shadow-sm bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
                 <div class="flex items-center justify-between">
                     <div>
                         <span class="text-xs text-emerald-100 font-bold block mb-1">現金残高 (手元現金)</span>
@@ -100,6 +100,7 @@
                         <i class="fa-solid fa-wallet"></i>
                     </div>
                 </div>
+                <div id="balance-warning" class="hidden mt-3 p-2.5 rounded-lg bg-white text-rose-700 text-xs font-bold leading-relaxed"></div>
                 <div id="bank-balance-row" class="hidden mt-3 pt-2 border-t border-white/30 grid grid-cols-2 gap-2 text-sm">
                     <div><span class="text-xs text-emerald-100 block">口座残高</span><strong id="stat-bank">¥0</strong></div>
                     <div><span class="text-xs text-emerald-100 block">合計 (現金＋口座)</span><strong id="stat-total">¥0</strong></div>
@@ -818,6 +819,44 @@
             return e.account === acct;
         }
 
+        // 日ごとの締め残高で、現金・口座がマイナスになっていないか調べる
+        function scanNegatives(events) {
+            const res = {};
+            const bal = {};
+            ['現金', '銀行口座'].forEach(a => { res[a] = { first: null, min: 0 }; bal[a] = 0; });
+            events.forEach((e, i) => {
+                ['現金', '銀行口座'].forEach(a => { bal[a] += eventDelta(e, a); });
+                const next = events[i + 1];
+                if (next && next.date === e.date) return; // 同じ日の入出金をすべて反映してから判定
+                ['現金', '銀行口座'].forEach(a => {
+                    if (bal[a] < 0) {
+                        if (!res[a].first) res[a].first = e.date;
+                        if (bal[a] < res[a].min) res[a].min = bal[a];
+                    }
+                });
+            });
+            return res;
+        }
+
+        function acctLabel(a) { return a === '現金' ? '現金残高' : '口座残高'; }
+        function fmtDate(d) { const [y, m, day] = d.split('-'); return `${y}年${+m}月${+day}日`; }
+
+        // 追加しようとしている処理で残高がマイナスになるなら確認する（true: 登録してよい）
+        function confirmIfNegative(addFn, removeFn) {
+            const before = scanNegatives(getAllCashEvents());
+            addFn();
+            const after = scanNegatives(getAllCashEvents());
+            removeFn();
+            const msgs = [];
+            ['現金', '銀行口座'].forEach(a => {
+                if (after[a].min < before[a].min) {
+                    msgs.push(`・${acctLabel(a)}が ${fmtDate(after[a].first)} 時点でマイナス（最も低いとき −${Math.abs(after[a].min).toLocaleString()}円）になります。`);
+                }
+            });
+            if (msgs.length === 0) return true;
+            return confirm(`【残高の確認】\n${msgs.join('\n')}\n\n支払/保管区分（現金・口座）や金額、日付が正しいか確認してください。\nこのまま登録しますか？`);
+        }
+
         // 現金・口座・合計の残高を順に計算して各明細に持たせる
         function computeBalances(events, viewAcct) {
             let cash = 0, bank = 0, total = 0, totalIncome = 0, totalExpense = 0, hasBank = false;
@@ -855,7 +894,7 @@
                 methodVal = `${from}→${to}`;
             }
 
-            saveTransaction({
+            const item = {
                 id: Date.now().toString(),
                 date,
                 type,
@@ -867,7 +906,10 @@
                 to,
                 receiptNo,
                 photo: null
-            });
+            };
+
+            if (!confirmIfNegative(() => transactions.push(item), () => transactions.pop())) return;
+            saveTransaction(item);
         }
 
         function saveTransaction(item) {
@@ -900,6 +942,22 @@
             document.getElementById('stat-bank').textContent = `¥${b.bank.toLocaleString()}`;
             document.getElementById('stat-total').textContent = `¥${b.total.toLocaleString()}`;
             document.getElementById('bank-balance-row').classList.toggle('hidden', !b.hasBank);
+
+            const neg = scanNegatives(events);
+            const warnLines = ['現金', '銀行口座'].filter(a => neg[a].first).map(a =>
+                `⚠ ${acctLabel(a)}が ${fmtDate(neg[a].first)} からマイナスになっています（最も低いとき −${Math.abs(neg[a].min).toLocaleString()}円）。`);
+            const warnEl = document.getElementById('balance-warning');
+            const card = document.getElementById('balance-card');
+            if (warnLines.length) {
+                warnEl.innerHTML = warnLines.join('<br>') + '<br><span class="font-normal">支払/保管区分（現金・口座）、金額、日付を確認してください。</span>';
+                warnEl.classList.remove('hidden');
+                card.classList.remove('from-emerald-500', 'to-teal-600');
+                card.classList.add('from-rose-500', 'to-rose-600');
+            } else {
+                warnEl.classList.add('hidden');
+                card.classList.remove('from-rose-500', 'to-rose-600');
+                card.classList.add('from-emerald-500', 'to-teal-600');
+            }
             document.getElementById('balance-header').textContent =
                 filterAcct === '現金' ? '現金残高' : filterAcct === '銀行口座' ? '口座残高' : '合計残高';
 
@@ -1074,6 +1132,7 @@
                 history: []
             };
 
+            if (!confirmIfNegative(() => advances.push(newAdv), () => advances.pop())) return;
             advances.push(newAdv);
             saveLocalData();
             document.getElementById('advance-form').reset();
