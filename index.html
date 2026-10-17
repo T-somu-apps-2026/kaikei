@@ -670,7 +670,14 @@
             if (isNaN(y) || isNaN(m)) return null;
             return m >= settings.fiscalStartMonth ? y : y - 1;
         }
-        function currentFY() { return fyOf(todayStr()); }
+        // 「今年度」= 今日の日付の年度。ただし次年度へ繰越済みなら、繰越先の年度を今年度とする
+        function currentFY() {
+            let fy = fyOf(todayStr());
+            transactions.forEach(t => {
+                if (t.carryover && Number.isInteger(t.carryFromFY) && t.carryFromFY + 1 > fy) fy = t.carryFromFY + 1;
+            });
+            return fy;
+        }
         function fyStartDate(fy) { return `${fy}-${pad2(settings.fiscalStartMonth)}-01`; }
         function fyEndDate(fy) {
             const d = new Date(fy + 1, settings.fiscalStartMonth - 1, 0);
@@ -769,7 +776,7 @@
         function renderFYBar() {
             const sel = document.getElementById('fy-select');
             sel.innerHTML = listFYs().map(fy =>
-                `<option value="${fy}" ${fy === selectedFY ? 'selected' : ''}>${fyLabel(fy)}（${fyShortRange(fy)}）${fy === currentFY() ? ' ・今年度' : ''}</option>`
+                `<option value="${fy}" ${fy === selectedFY ? 'selected' : ''}>${fyLabel(fy)}（${fyShortRange(fy)}）${fy === currentFY() ? ' ・今年度' : (carryRecordsFrom(fy).length > 0 ? ' ・繰越済み' : '')}</option>`
             ).join('');
             document.getElementById('fy-range').textContent = `${fmtDate(fyStartDate(selectedFY))} 〜 ${fmtDate(fyEndDate(selectedFY))}`;
 
