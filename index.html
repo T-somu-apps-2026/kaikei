@@ -44,7 +44,7 @@
             <div class="flex items-center space-x-3">
                 <i class="fa-solid fa-book-bookmark text-2xl text-emerald-200"></i>
                 <div>
-                    <h1 class="text-xl font-bold tracking-wide">保護者役員会 現金出納帳</h1>
+                    <h1 id="app-name-header" class="text-xl font-bold tracking-wide">保護者役員会 現金出納帳</h1>
                     <p class="text-xs text-emerald-100">アカウント不要・スマホ完結</p>
                 </div>
             </div>
@@ -211,7 +211,7 @@
                 </div>
 
                 <div class="print-header print-only text-center mb-6 pt-2">
-                    <h1 class="text-2xl font-bold">保護者役員会 現金出納帳</h1>
+                    <h1 id="app-name-print" class="text-2xl font-bold">保護者役員会 現金出納帳</h1>
                     <p id="print-date" class="text-xs text-slate-600 mt-1"></p>
                 </div>
 
@@ -441,6 +441,21 @@
                             <i class="fa-solid fa-file-arrow-up"></i>バックアップから復元
                         </button>
                     </div>
+                </div>
+            </div>
+
+            <!-- アプリ名の設定 -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-lg font-bold text-slate-800 border-b pb-3 mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-signature text-emerald-600"></i>アプリ名（団体名）
+                </h2>
+                <p class="text-xs text-slate-500 mb-3">画面上部と印刷・PDFの見出し、保存するファイル名に使われます。設定はバックアップに含まれ、後任の方にも引き継がれます。</p>
+                <div class="flex gap-2">
+                    <input id="app-name-input" type="text" maxlength="30" placeholder="例: ○○小学校 保護者会 現金出納帳" class="flex-1 min-w-0 px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                    <button type="button" onclick="saveAppName()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold whitespace-nowrap">保存</button>
+                </div>
+                <div class="mt-2 text-right">
+                    <button type="button" onclick="resetAppName()" class="text-xs text-slate-500 underline">最初の名前に戻す</button>
                 </div>
             </div>
 
@@ -693,7 +708,7 @@
         let transactions = [];      // parents_association_ledger
         let advances = [];          // parents_association_advances
         let paymentVouchers = [];   // parents_association_vouchers
-        let settings = { fiscalStartMonth: 4, categories: null };  // parents_association_settings
+        let settings = { fiscalStartMonth: 4, categories: null, appName: '' };  // parents_association_settings
         let selectedFY = null;      // 表示中の年度（parents_association_selected_fy）
         const KEEP_YEARS = 5;       // 今年度＋過去5年度分を残す
 
@@ -1004,6 +1019,7 @@ ${fyLabel(cutoff - 1)}以前の
             sm.value = settings.fiscalStartMonth;
 
             applyCategories();
+            applyAppName();
             updateCategoryOptions();
             renderCategorySettings();
             applyFYDefaults();
@@ -2313,7 +2329,39 @@ ${fyLabel(cutoff - 1)}以前の
                 const exp = clean(s.categories.expense).filter(n => inc.indexOf(n) === -1);
                 if (exp.length > 0) settings.categories = { income: inc, expense: exp };
             }
+            if (s && typeof s.appName === 'string') {
+                const n = s.appName.trim().slice(0, 30);
+                settings.appName = /[<>`\\]/.test(n) ? '' : n;
+            }
             applyCategories();
+            applyAppName();
+        }
+
+        /* --- アプリ名の設定 --- */
+        const DEFAULT_APP_NAME = '保護者役員会 現金出納帳';
+        function appName() { return settings.appName || DEFAULT_APP_NAME; }
+        function fileSafeAppName() { return appName().replace(/[\\/:*?"<>|\s]+/g, '_'); }
+        function applyAppName() {
+            const n = appName();
+            document.title = n;
+            const h = document.getElementById('app-name-header'); if (h) h.textContent = n;
+            const pr = document.getElementById('app-name-print'); if (pr) pr.textContent = n;
+            const inp = document.getElementById('app-name-input'); if (inp) inp.value = settings.appName;
+        }
+        function saveAppName() {
+            const n = document.getElementById('app-name-input').value.trim();
+            if (n.length > 30) { alert('アプリ名は30文字以内にしてください。'); return; }
+            if (/[<>`\\]/.test(n)) { alert('アプリ名に < > ` \\ は使えません。'); return; }
+            settings.appName = (n === DEFAULT_APP_NAME) ? '' : n;
+            saveLocalData();
+            applyAppName();
+            alert(`アプリ名を「${appName()}」にしました。`);
+        }
+        function resetAppName() {
+            if (!confirm(`アプリ名を最初の「${DEFAULT_APP_NAME}」に戻しますか？`)) return;
+            settings.appName = '';
+            saveLocalData();
+            applyAppName();
         }
 
         /* --- 勘定科目の設定 --- */
@@ -2451,7 +2499,7 @@ ${fyLabel(cutoff - 1)}以前の
                 const downloadAnchor = document.createElement('a');
                 const today = todayStr();
                 downloadAnchor.href = url;
-                downloadAnchor.download = `保護者会出納帳_全バックアップ_${today}.json`;
+                downloadAnchor.download = `${fileSafeAppName()}_全バックアップ_${today}.json`;
 
                 document.body.appendChild(downloadAnchor);
                 downloadAnchor.click();
@@ -2551,7 +2599,7 @@ ${fyLabel(cutoff - 1)}以前の
             const link = document.createElement("a");
             const today = todayStr();
             link.setAttribute("href", url);
-            link.setAttribute("download", `保護者会現金出納帳_${fyLabel(selectedFY)}_${today}.csv`);
+            link.setAttribute("download", `${fileSafeAppName()}_${fyLabel(selectedFY)}_${today}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
